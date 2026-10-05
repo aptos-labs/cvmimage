@@ -22,8 +22,7 @@ const (
 	ramdiskReserveGB  = 16
 	ramdiskFallbackGB = 4
 
-	tmpfs512M           = "size=512M,mode=1777"
-	dockerRuntimesTmpfs = "size=256M,mode=0755"
+	tmpfs512M = "size=512M,mode=1777"
 
 	attestationMountMode = 0o444
 )
@@ -145,13 +144,13 @@ func SetupRamdisk(log LogFunc) error {
 	if err := ensureDir(boot.PrivateDir, 0700); err != nil {
 		return err
 	}
-	// dockerd copies custom runtimes into data-root. That tree sits on the
-	// noexec ramdisk, so runsc (and nvidia-container-runtime) cannot be
-	// exec'd from there unless this nested tmpfs is executable.
-	if err := ensureDir(boot.DockerRuntimesDir, 0755); err != nil {
+	// dockerd copies custom runtimes into data-root and must be able to
+	// create that tree. Keep the parent ramdisk noexec; give Docker its
+	// own executable tmpfs so runsc can start.
+	if err := ensureDir(boot.DockerDataRoot, 0700); err != nil {
 		return err
 	}
-	if err := mountIfNeeded("tmpfs", boot.DockerRuntimesDir, "tmpfs", syscall.MS_NOSUID|syscall.MS_NODEV, dockerRuntimesTmpfs, log); err != nil {
+	if err := mountIfNeeded("tmpfs", boot.DockerDataRoot, "tmpfs", syscall.MS_NOSUID|syscall.MS_NODEV, fmt.Sprintf("size=%dG,mode=0700", sizeGB), log); err != nil {
 		return err
 	}
 	if err := ensureDir(boot.PublicDir, 0755); err != nil {
