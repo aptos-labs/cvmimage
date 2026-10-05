@@ -144,6 +144,15 @@ func SetupRamdisk(log LogFunc) error {
 	if err := ensureDir(boot.PrivateDir, 0700); err != nil {
 		return err
 	}
+	// dockerd copies custom runtimes into data-root and must be able to
+	// create that tree. Keep the parent ramdisk noexec; give Docker its
+	// own executable tmpfs so runsc can start.
+	if err := ensureDir(boot.DockerDataRoot, 0700); err != nil {
+		return err
+	}
+	if err := mountIfNeeded("tmpfs", boot.DockerDataRoot, "tmpfs", syscall.MS_NOSUID|syscall.MS_NODEV, fmt.Sprintf("size=%dG,mode=0700", sizeGB), log); err != nil {
+		return err
+	}
 	if err := ensureDir(boot.PublicDir, 0755); err != nil {
 		return err
 	}

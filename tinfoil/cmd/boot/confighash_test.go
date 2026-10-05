@@ -127,3 +127,60 @@ func TestConfigHashFromMRCONFIGIDRejectsTheWrongLength(t *testing.T) {
 		}
 	}
 }
+
+func TestLaunchConfigHashPrefersTheMeasuredField(t *testing.T) {
+	want := strings.Repeat("ab", 32)
+	got, err := launchConfigHash(want, func() (string, error) {
+		t.Fatal("cmdline consulted while MRCONFIGID was set")
+		return "", nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != want {
+		t.Fatalf("hash = %s, want %s", got, want)
+	}
+}
+
+func TestLaunchConfigHashTakesTheCmdlineWhenTheMeasuredFieldIsUnset(t *testing.T) {
+	want := strings.Repeat("cd", 32)
+	got, err := launchConfigHash(unsetConfigHash, func() (string, error) {
+		return want, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != want {
+		t.Fatalf("hash = %s, want %s", got, want)
+	}
+}
+
+func TestLaunchConfigHashRefusesZerosWithoutACmdlineHash(t *testing.T) {
+	_, err := launchConfigHash(unsetConfigHash, func() (string, error) {
+		return cmdlineConfigHashFrom("console=hvc0")
+	})
+	if err == nil {
+		t.Fatal("unset MRCONFIGID without tinfoil-config-hash was accepted")
+	}
+}
+
+func TestCmdlineConfigHashFromTakesTheFleetParameter(t *testing.T) {
+	want := strings.Repeat("ef", 32)
+	got, err := cmdlineConfigHashFrom("root=/dev/mapper/root tinfoil-config-hash=" + want + " tinfoil-debug=on")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != want {
+		t.Fatalf("hash = %s, want %s", got, want)
+	}
+}
+
+func TestCmdlineConfigHashFromRejectsDuplicatesAndBadValues(t *testing.T) {
+	hash := strings.Repeat("ab", 32)
+	if _, err := cmdlineConfigHashFrom("tinfoil-config-hash=" + hash + " tinfoil-config-hash=" + hash); err == nil {
+		t.Fatal("duplicate tinfoil-config-hash accepted")
+	}
+	if _, err := cmdlineConfigHashFrom("tinfoil-config-hash=not-a-hash"); err == nil {
+		t.Fatal("invalid tinfoil-config-hash accepted")
+	}
+}

@@ -63,7 +63,7 @@ of image inputs:
 | nvattest and libnvat               | Nixpkgs CMake and Rust builders                        | `nix/nvattest.nix`, `nix/locks/regorus.Cargo.lock`                                                   |
 | Ubuntu package payloads            | Nixpkgs `debClosureGenerator` and fixed-output fetches | `nix/runtime-packages.nix`, `nix/runtime-packages-lock.nix`                                          |
 | NVIDIA, Docker, and debug payloads | Fixed-output archive fetches                           | `nix/runtime-sources.nix`                                                                            |
-| Repository configuration           | Direct additive copy                                   | `image/rootfs/`                                                                                      |
+| Repository configuration           | Direct additive copy                                   | `image/rootfs/`, `image/debug-rootfs/`                                                               |
 | Rootfs and debug layer archives    | Fixed tar materializer                                 | `nix/rootfs.nix`                                                                                     |
 | Shipping and debug disk images     | Nix-owned fakeroot and `systemd-repart`                | `nix/image.nix`, `repart.d/`                                                                         |
 | CVM compiler and firmware       | Nixpkgs `pkgsStatic.rustPlatform`                      | `nix/compiler.nix`, `Cargo.toml`, `Cargo.lock`                                                          |

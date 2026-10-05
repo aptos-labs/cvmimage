@@ -34,6 +34,8 @@ const (
 	RuntimeBootedPath     = PrivateDir + "/runtime-booted"
 	DockerConfigDir       = PrivateDir + "/docker-config"
 	DockerConfigPath      = DockerConfigDir + "/config.json"
+	DockerDataRoot        = PrivateDir + "/docker"
+	DockerRuntimesDir     = DockerDataRoot + "/runtimes"
 	GCloudKeyPath         = PrivateDir + "/gcloud_key.json"
 	CacheDir              = PrivateDir + "/tfshim-cache"
 	StatePath             = PrivateDir + "/boot-state.json"
