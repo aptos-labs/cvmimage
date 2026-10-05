@@ -34,6 +34,19 @@ func TestEnsureSymlinkCreatesAndReplacesStaleLink(t *testing.T) {
 	}
 }
 
+func TestDockerRuntimesTmpfsIsExecutable(t *testing.T) {
+	// dockerd copies runsc into this tree; MS_NOEXEC is why the first
+	// debug image failed with permission denied on the runtime binary.
+	const noexec = syscall.MS_NOEXEC
+	flags := uintptr(syscall.MS_NOSUID | syscall.MS_NODEV)
+	if flags&noexec != 0 {
+		t.Fatal("docker runtimes tmpfs must be executable")
+	}
+	if dockerRuntimesTmpfs != "size=256M,mode=0755" {
+		t.Fatalf("docker runtimes tmpfs = %q", dockerRuntimesTmpfs)
+	}
+}
+
 func TestRamdiskSizeGB(t *testing.T) {
 	tests := []struct {
 		name     string
