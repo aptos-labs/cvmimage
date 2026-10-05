@@ -23,6 +23,10 @@ let
     inherit (sources.docker) name url;
     sha256 = sources.docker.sha256;
   };
+  gvisorArchive = pkgs.fetchurl {
+    inherit (sources.gvisor) name url;
+    sha256 = sources.gvisor.sha256;
+  };
   # Keep library directories whole for NSS, provider, and other dlopen-only edges.
   ubuntuPayloadPaths = [
     "etc/bindresvport.blacklist"
@@ -237,7 +241,7 @@ let
 
   debugLayer = pkgs.runCommand "cvmimage-debug-layer.tar" {
     allowedReferences = [ ];
-    nativeBuildInputs = [ pkgs.coreutils pkgs.gnutar ];
+    nativeBuildInputs = [ pkgs.coreutils pkgs.gnutar pkgs.bzip2 ];
   } ''
     set -o pipefail
     root="$TMPDIR/root"
@@ -249,6 +253,22 @@ let
     install_new 0755 ${debugPID1}/bin/tinfoil-pid1 \
       "$root/usr/bin/tinfoil-pid1" -D
     install -d -m 0700 "$root/root"
+
+    gvisor="$TMPDIR/gvisor"
+    mkdir -p "$gvisor" "$root/usr/bin/gvisor-bin"
+    ${pkgs.gnutar}/bin/tar --extract --bzip2 --file ${gvisorArchive} \
+      --directory "$gvisor"
+    install_new 0755 "$gvisor/runsc" "$root/usr/bin/runsc" -D
+    install_new 0755 "$gvisor/containerd-shim-runsc-v1" \
+      "$root/usr/bin/containerd-shim-runsc-v1" -D
+    for sidecar in checkpointgofer gvisor-sentry-prewarmer gvisor_sentry \
+        runsc-fd-parking runsc-metric-server; do
+      install_new 0755 "$gvisor/gvisor-bin/$sidecar" \
+        "$root/usr/bin/gvisor-bin/$sidecar"
+    done
+    install_new 0644 ${../image/debug-rootfs/etc/docker/daemon.json} \
+      "$root/etc/docker/daemon.json" -D
+
     ${deterministicTar "$root" "$out"}
   '';
 in
