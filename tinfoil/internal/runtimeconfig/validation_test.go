@@ -51,6 +51,11 @@ func TestDecodeValidatesRuntimeConfig(t *testing.T) {
 		{name: "debug mutable image", debug: true, yaml: strings.Replace(validConfig, "example.com/app@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "example.com/app:latest", 1), want: "immutable digest"},
 		{name: "undeclared network", yaml: strings.Replace(validConfig, "networks: [app]", "networks: [missing]", 1), want: "not declared"},
 		{name: "production docker socket", yaml: strings.Replace(validConfig, "networks: [app]", "networks: [app]\n    volumes: [/run/docker.sock:/var/run/docker.sock]", 1), want: "named volume"},
+		{name: "production docker host", yaml: strings.Replace(validConfig, "networks: [app]", "networks: [app]\n    docker: host", 1)},
+		{name: "docker host with runsc", yaml: strings.Replace(validConfig, "networks: [app]", "networks: [app]\n    docker: host\n    runtime: runsc", 1)},
+		{name: "production docker host listed socket", yaml: strings.Replace(validConfig, "networks: [app]", "networks: [app]\n    docker: host\n    volumes: [/run/docker.sock:/var/run/docker.sock]", 1), want: "named volume"},
+		{name: "docker host named volume", yaml: strings.Replace(validConfig, "networks: [app]", "networks: [app]\n    docker: host\n    volumes: [scratch:/data]", 1)},
+		{name: "unsupported docker mode", yaml: strings.Replace(validConfig, "networks: [app]", "networks: [app]\n    docker: sidecar", 1), want: `docker "sidecar" is unsupported`},
 		{name: "debug toolbox socket", debug: true, yaml: strings.Replace(validConfig, "name: app\n    image", fmt.Sprintf("name: %s\n    volumes: [/run/docker.sock:/var/run/docker.sock]\n    image", ReservedDebugContainerName), 1)},
 		{name: "debug toolbox capability", debug: true, yaml: strings.Replace(validConfig, "name: app\n    image", fmt.Sprintf("name: %s\n    cap_add: [SETGID]\n    image", ReservedDebugContainerName), 1), want: "capability"},
 		{name: "host ipc", yaml: strings.Replace(validConfig, "networks: [app]", "networks: [app]\n    ipc: host", 1), want: "ipc must be private or none"},
@@ -74,6 +79,20 @@ func TestDecodeValidatesRuntimeConfig(t *testing.T) {
 				t.Fatalf("error = %v, want substring %q", err, test.want)
 			}
 		})
+	}
+}
+
+func TestDecodeAcceptsProductionHostDocker(t *testing.T) {
+	yaml := strings.Replace(validConfig, "networks: [app]", "networks: [app]\n    docker: host", 1)
+	config, err := Decode([]byte(yaml), false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !config.Containers[0].HostDocker() {
+		t.Fatal("expected docker: host")
+	}
+	if got := config.Containers[0].Volumes; len(got) != 0 {
+		t.Fatalf("volumes = %v, want none listed", got)
 	}
 }
 

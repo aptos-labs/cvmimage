@@ -15,6 +15,8 @@ const (
 	ReservedDebugContainerName = "tinfoil-debug-toolbox"
 	ReservedDebugPort          = "2222/tcp"
 	ReservedDebugHostPort      = 2222
+	DockerHost                 = "host"
+	DockerSocketBind           = "/run/docker.sock:/var/run/docker.sock"
 )
 
 type Config struct {
@@ -96,6 +98,7 @@ type Container struct {
 	Devices     []string          `yaml:"devices,omitempty"`
 	CapAdd      []string          `yaml:"cap_add,omitempty"`
 	Runtime     string            `yaml:"runtime,omitempty"`
+	Docker      string            `yaml:"docker,omitempty"`
 	Networks    []string          `yaml:"networks,omitempty"`
 	IPC         string            `yaml:"ipc,omitempty"`
 	PidMode     string            `yaml:"pid,omitempty"`
@@ -123,7 +126,7 @@ var containerFields = map[string]bool{
 	"name": true, "image": true, "command": true, "entrypoint": true,
 	"working_dir": true, "user": true, "env": true, "secrets": true,
 	"volumes": true, "devices": true, "cap_add": true, "runtime": true,
-	"networks": true, "ipc": true, "pid": true, "gpus": true,
+	"docker": true, "networks": true, "ipc": true, "pid": true, "gpus": true,
 	"shm_size": true, "memory": true, "cpus": true, "tmpfs": true,
 	"read_only": true, "pids_limit": true, "restart": true,
 	"stop_signal": true, "stop_timeout": true, "healthcheck": true,
@@ -205,6 +208,10 @@ func (h *Healthcheck) UnmarshalYAML(node *yaml.Node) error {
 
 func ReservedDebugRuntimeEnabled(containerName string, debug bool) bool {
 	return debug && containerName == ReservedDebugContainerName
+}
+
+func (c Container) HostDocker() bool {
+	return c.Docker == DockerHost
 }
 
 func Decode(data []byte, debug bool) (*Config, error) {

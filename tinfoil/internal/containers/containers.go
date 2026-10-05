@@ -517,6 +517,9 @@ func buildContainerCreateSpec(c Container, cfg *Config, extConfig *shimconfig.Ex
 	for _, vol := range c.Volumes {
 		hostConfig.Binds = append(hostConfig.Binds, vol)
 	}
+	if c.HostDocker() {
+		hostConfig.Binds = append(hostConfig.Binds, runtimeconfig.DockerSocketBind)
+	}
 
 	if reservedDebugRuntime {
 		applyReservedDebugRuntime(containerConfig, hostConfig)

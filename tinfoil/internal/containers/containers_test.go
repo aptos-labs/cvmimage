@@ -10,6 +10,7 @@ import (
 
 	shimconfig "tinfoil/internal/config"
 	"tinfoil/internal/containernet"
+	"tinfoil/internal/runtimeconfig"
 )
 
 func TestParseGPUs(t *testing.T) {
@@ -262,5 +263,51 @@ func TestBuildContainerCreateSpec_ProductionInstallerKeepsRuntimeClosed(t *testi
 	}
 	if len(hostConfig.Devices) != 0 {
 		t.Fatalf("Devices = %v, want no synthesized device mappings", hostConfig.Devices)
+	}
+}
+
+func TestBuildContainerCreateSpec_HostDockerInjectsSocket(t *testing.T) {
+	cfg := &Config{Networks: map[string]*NetworkSpec{"app": {Egress: "closed"}}}
+	c := Container{
+		Name:     "worker",
+		Image:    "example.invalid/worker",
+		Docker:   runtimeconfig.DockerHost,
+		Networks: []string{"app"},
+	}
+
+	containerConfig, hostConfig, _, _, err := buildContainerCreateSpec(c, cfg, &shimconfig.ExternalConfig{}, false)
+	if err != nil {
+		t.Fatalf("buildContainerCreateSpec: %v", err)
+	}
+	if !slices.Contains(hostConfig.Binds, runtimeconfig.DockerSocketBind) {
+		t.Fatalf("Binds = %v, want docker socket bind", hostConfig.Binds)
+	}
+	if hostConfig.NetworkMode == container.NetworkMode("bridge") {
+		t.Fatalf("NetworkMode = %q, docker: host must not force debug toolbox bridge", hostConfig.NetworkMode)
+	}
+	if len(containerConfig.ExposedPorts) != 0 {
+		t.Fatalf("ExposedPorts = %v, want none", containerConfig.ExposedPorts)
+	}
+	if len(hostConfig.PortBindings) != 0 {
+		t.Fatalf("PortBindings = %v, want none", hostConfig.PortBindings)
+	}
+	if hostConfig.Privileged {
+		t.Fatal("Privileged = true, want false")
+	}
+}
+
+func TestBuildContainerCreateSpec_WithoutHostDockerOmitsSocket(t *testing.T) {
+	cfg := &Config{Networks: map[string]*NetworkSpec{}}
+	c := Container{
+		Name:  "worker",
+		Image: "example.invalid/worker",
+	}
+
+	_, hostConfig, _, _, err := buildContainerCreateSpec(c, cfg, &shimconfig.ExternalConfig{}, false)
+	if err != nil {
+		t.Fatalf("buildContainerCreateSpec: %v", err)
+	}
+	if slices.Contains(hostConfig.Binds, runtimeconfig.DockerSocketBind) {
+		t.Fatalf("Binds = %v, want no docker socket", hostConfig.Binds)
 	}
 }

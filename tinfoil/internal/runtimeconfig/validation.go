@@ -25,7 +25,6 @@ const (
 	maxEnvironmentNameBytes   = 256
 	maxHostnameLength         = 253
 	maxBridgeNameLen          = 15
-	debugDockerSocketBind     = "/run/docker.sock:/var/run/docker.sock"
 	debugManagerSocketBind    = "/run/tinfoil/containers.sock:/run/tinfoil/containers.sock"
 )
 
@@ -176,6 +175,11 @@ func validateContainerPolicy(index int, container *Container, availableGPUs int,
 	default:
 		return fmt.Errorf("containers[%d].runtime %q is unsupported", index, container.Runtime)
 	}
+	switch container.Docker {
+	case "", DockerHost:
+	default:
+		return fmt.Errorf("containers[%d].docker %q is unsupported", index, container.Docker)
+	}
 	if err := validateGPUSelection(index, container.GPUs, availableGPUs); err != nil {
 		return err
 	}
@@ -186,7 +190,7 @@ func validateContainerPolicy(index int, container *Container, availableGPUs int,
 		return fmt.Errorf("containers[%d].runtime nvidia requires an explicit gpus selection", index)
 	}
 	for volumeIndex, volume := range container.Volumes {
-		if ReservedDebugRuntimeEnabled(container.Name, debug) && (volume == debugDockerSocketBind || volume == debugManagerSocketBind) {
+		if ReservedDebugRuntimeEnabled(container.Name, debug) && (volume == DockerSocketBind || volume == debugManagerSocketBind) {
 			continue
 		}
 		source, _, found := strings.Cut(volume, ":")

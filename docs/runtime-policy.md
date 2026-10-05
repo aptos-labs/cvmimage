@@ -54,6 +54,19 @@ aliases, or capability additions outside `IPC_LOCK`, `NET_BIND_SERVICE`, and
 the attested top-level GPU count; boolean, zero, negative, duplicate, and
 out-of-range selections are rejected.
 
+`docker: host` grants the named container the host Docker API. Tinfoil injects
+`/run/docker.sock:/var/run/docker.sock`. Host-path sources under `volumes:`
+stay rejected, including an explicit docker socket bind. Named volumes are
+unchanged; if one uses the same container path, Docker reports the conflict.
+The grant does not add Linux capabilities,
+privileged mode, host networking, published ports, or extra host mounts; the
+worker can still request those through Docker. Approving this measured
+configuration trusts that container to administer the CVM's containers and to
+reach host resources through dockerd. Children it creates do not pass through
+Tinfoil's YAML validator. This is the Docker socket, not `network_mode: host`.
+The debug toolbox remains a separate debug-image exception and does not use
+this field.
+
 Every container image must be an OCI reference containing an immutable digest,
 including in measured debug mode. The container manager pulls that exact
 reference and verifies Docker's inspected repository digests before creating
