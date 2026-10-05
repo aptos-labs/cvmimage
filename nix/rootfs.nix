@@ -23,6 +23,10 @@ let
     inherit (sources.docker) name url;
     sha256 = sources.docker.sha256;
   };
+  gvisorArchive = pkgs.fetchurl {
+    inherit (sources.gvisor) name url;
+    sha256 = sources.gvisor.sha256;
+  };
   # Keep library directories whole for NSS, provider, and other dlopen-only edges.
   ubuntuPayloadPaths = [
     "etc/bindresvport.blacklist"
@@ -156,6 +160,7 @@ let
   rootfs = pkgs.runCommand "cvmimage-rootfs.tar" {
     allowedReferences = [ ];
     nativeBuildInputs = [
+      pkgs.bzip2
       pkgs.coreutils
       pkgs.findutils
       pkgs.gnused
@@ -182,6 +187,19 @@ let
       --directory "$docker" --strip-components=1
     for command in containerd containerd-shim-runc-v2 dockerd runc; do
       install_new 0755 "$docker/$command" "$root/usr/bin/$command"
+    done
+
+    gvisor="$TMPDIR/gvisor"
+    mkdir -p "$gvisor" "$root/usr/bin/gvisor-bin"
+    ${pkgs.gnutar}/bin/tar --extract --bzip2 --file ${gvisorArchive} \
+      --directory "$gvisor"
+    install_new 0755 "$gvisor/runsc" "$root/usr/bin/runsc" -D
+    install_new 0755 "$gvisor/containerd-shim-runsc-v1" \
+      "$root/usr/bin/containerd-shim-runsc-v1" -D
+    for sidecar in checkpointgofer gvisor-sentry-prewarmer gvisor_sentry \
+        runsc-fd-parking runsc-metric-server; do
+      install_new 0755 "$gvisor/gvisor-bin/$sidecar" \
+        "$root/usr/bin/gvisor-bin/$sidecar"
     done
 
     for command in boot containers egress pid1 shim; do

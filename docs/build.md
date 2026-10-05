@@ -62,7 +62,7 @@ of image inputs:
 | Three NVIDIA modules               | Nixpkgs kernel-module build                            | `nix/nvidia-modules.nix`                                                                             |
 | nvattest and libnvat               | Nixpkgs CMake and Rust builders                        | `nix/nvattest.nix`, `nix/locks/regorus.Cargo.lock`                                                   |
 | Ubuntu package payloads            | Nixpkgs `debClosureGenerator` and fixed-output fetches | `nix/runtime-packages.nix`, `nix/runtime-packages-lock.nix`                                          |
-| NVIDIA, Docker, and debug payloads | Fixed-output archive fetches                           | `nix/runtime-sources.nix`                                                                            |
+| NVIDIA, Docker, gVisor, and debug  | Fixed-output archive fetches                           | `nix/runtime-sources.nix`                                                                            |
 | Repository configuration           | Direct additive copy                                   | `image/rootfs/`                                                                                      |
 | Rootfs and debug layer archives    | Fixed tar materializer                                 | `nix/rootfs.nix`                                                                                     |
 | Shipping and debug disk images     | Nix-owned fakeroot and `systemd-repart`                | `nix/image.nix`, `repart.d/`                                                                         |

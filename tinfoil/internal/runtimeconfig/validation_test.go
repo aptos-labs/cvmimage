@@ -56,7 +56,9 @@ func TestDecodeValidatesRuntimeConfig(t *testing.T) {
 		{name: "host ipc", yaml: strings.Replace(validConfig, "networks: [app]", "networks: [app]\n    ipc: host", 1), want: "ipc must be private or none"},
 		{name: "host pid", yaml: strings.Replace(validConfig, "networks: [app]", "networks: [app]\n    pid: host", 1), want: "pid is unsupported"},
 		{name: "raw device", yaml: strings.Replace(validConfig, "networks: [app]", "networks: [app]\n    devices: [/dev/kvm]", 1), want: "devices is unsupported"},
-		{name: "implicit runtime alias", yaml: strings.Replace(validConfig, "networks: [app]", "networks: [app]\n    runtime: attacker.runc.v2", 1), want: "runtime"},
+		{name: "implicit runtime alias", yaml: strings.Replace(validConfig, "networks: [app]", "networks: [app]\n    runtime: attacker.runc.v2", 1), want: `runtime "attacker.runc.v2" is unsupported`},
+		{name: "production runsc", yaml: strings.Replace(validConfig, "networks: [app]", "networks: [app]\n    runtime: runsc", 1)},
+		{name: "runsc with gpus", yaml: strings.Replace(strings.Replace(validConfig, "cvm-version: 0.11.0", "cvm-version: 0.11.0\ngpus: 2", 1), "networks: [app]", "networks: [app]\n    runtime: runsc\n    gpus: all", 1), want: "gpus requires runtime: nvidia"},
 		{name: "nvidia runtime without selection", yaml: strings.Replace(validConfig, "networks: [app]", "networks: [app]\n    runtime: nvidia", 1), want: "explicit gpus selection"},
 		{name: "gpu selection without runtime", yaml: strings.Replace(validConfig, "networks: [app]", "networks: [app]\n    gpus: all", 1), want: "declares no GPUs"},
 		{name: "valid top-level gpu count", yaml: strings.Replace(validConfig, "cvm-version: 0.11.0", "cvm-version: 0.11.0\ngpus: 2", 1) + "\n", want: ""},
@@ -72,6 +74,17 @@ func TestDecodeValidatesRuntimeConfig(t *testing.T) {
 				t.Fatalf("error = %v, want substring %q", err, test.want)
 			}
 		})
+	}
+}
+
+func TestDecodeAcceptsProductionRunsc(t *testing.T) {
+	yaml := strings.Replace(validConfig, "networks: [app]", "networks: [app]\n    runtime: runsc", 1)
+	config, err := Decode([]byte(yaml), false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := config.Containers[0].Runtime; got != "runsc" {
+		t.Fatalf("runtime = %q, want runsc", got)
 	}
 }
 

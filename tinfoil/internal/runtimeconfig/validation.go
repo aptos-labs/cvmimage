@@ -171,7 +171,9 @@ func validateContainerPolicy(index int, container *Container, availableGPUs int,
 	if container.IPC != "" && container.IPC != "private" && container.IPC != "none" {
 		return fmt.Errorf("containers[%d].ipc must be private or none", index)
 	}
-	if container.Runtime != "" && container.Runtime != "nvidia" {
+	switch container.Runtime {
+	case "", "nvidia", "runsc":
+	default:
 		return fmt.Errorf("containers[%d].runtime %q is unsupported", index, container.Runtime)
 	}
 	if err := validateGPUSelection(index, container.GPUs, availableGPUs); err != nil {

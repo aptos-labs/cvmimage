@@ -17,8 +17,12 @@ The measured daemon policy includes these mode `0644` files:
   state below the private ramdisk and is installed only by the additive rootfs.
 - `/etc/docker/daemon.json` disables inter-container communication and the
   userland proxy, uses Docker's nftables backend, enables no-new-privileges and
-  the containerd snapshotter, and registers only the pinned NVIDIA runtime by
-  absolute path.
+  the containerd snapshotter, and registers the pinned NVIDIA runtime and
+  `runsc` by absolute path. `runsc` has no `runtimeArgs`, so dockerd execs
+  `/usr/bin/runsc` from the rootfs instead of writing a wrapper under the
+  noexec ramdisk data-root. Pinned gVisor 20260928.0 defaults
+  `--platform=systrap`; re-check that default when bumping the pin.
+  `gvisor-bin/` sits next to that binary.
 - `/etc/nftables.conf` installs the fail-closed input and forward baseline and
   declares the fixed `http01`, `inbound`, `container_input`, and
   `container_forward` chains. The measured baseline only jumps to them;
@@ -45,7 +49,8 @@ alternate OCI runtimes are not configured.
 Production container configuration is fail closed. Workloads cannot request
 host IPC, host PID namespaces, raw host devices, arbitrary containerd runtime
 aliases, or capability additions outside `IPC_LOCK`, `NET_BIND_SERVICE`, and
-`SYS_NICE`. The NVIDIA runtime requires an explicit GPU selection bounded by
+`SYS_NICE`. Allowed `runtime` values are empty (Docker's default `runc`),
+`nvidia`, and `runsc`. The NVIDIA runtime requires an explicit GPU selection bounded by
 the attested top-level GPU count; boolean, zero, negative, duplicate, and
 out-of-range selections are rejected.
 

@@ -13,6 +13,9 @@
         "nvidia": {
             "args": [],
             "path": "/usr/bin/nvidia-container-runtime"
+        },
+        "runsc": {
+            "path": "/usr/bin/runsc"
         }
     }
 }

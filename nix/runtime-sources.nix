@@ -18,6 +18,16 @@ in
     sha256 = "sha256-1iBK6pIjjiRT1URciFudLl64+CkVVo7FDt+dvhKjrHQ=";
   };
 
+  # runsc must sit next to gvisor-bin/; later releases no longer bundle
+  # sidecars inside the runsc binary. This pin defaults --platform=systrap
+  # (runsc/config/flags.go); re-check when upgrading so daemon.json can keep
+  # registering runsc without runtimeArgs.
+  gvisor = {
+    name = "gvisor-20260928.0-x86_64";
+    url = "https://github.com/google/gvisor/releases/download/release-20260928.0/gvisor-x86_64.tar.bz2";
+    sha256 = "f3ed9131bc252259df150e270154180188f9df56b73a2312940325e1f522a2d6";
+  };
+
   nvidiaDebs = [
     { name = "libnvidia-cfg1"; url = "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2604/x86_64/libnvidia-cfg1_595.71.05-1ubuntu1_amd64.deb"; sha256 = "dc18f61a73350cb4c19a775172c3090d794aae93eba5e0413a559b2337dff092"; }
     nvidiaCompute
