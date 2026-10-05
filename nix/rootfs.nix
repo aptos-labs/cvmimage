@@ -250,6 +250,10 @@ let
     ${pkgs.dpkg}/bin/dpkg-deb --fsys-tarfile ${busyboxDeb} |
       ${pkgs.gnutar}/bin/tar --extract --file=- --directory "$root" \
         --no-same-owner --no-overwrite-dir
+    # dockerd wraps custom runtimes in a #!/bin/sh script. Busybox is
+    # /usr/bin/busybox; plant /bin/sh so runsc can start.
+    install -d -m 0755 "$root/bin"
+    ln -s /usr/bin/busybox "$root/bin/sh"
     install_new 0755 ${debugPID1}/bin/tinfoil-pid1 \
       "$root/usr/bin/tinfoil-pid1" -D
     install -d -m 0700 "$root/root"
