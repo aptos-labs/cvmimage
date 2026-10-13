@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"tinfoil/internal/boot"
 	"tinfoil/internal/containernet"
 	"tinfoil/internal/runtimeconfig"
 )
@@ -58,6 +59,18 @@ func writeReservedDebugForwardRules(script *strings.Builder) {
 func writeBridgeRules(script *strings.Builder, bridge string, network *runtimeconfig.NetworkSpec) {
 	fmt.Fprintf(script, "add rule inet tinfoil container_forward iifname %q oifname %q accept\n", bridge, bridge)
 	fmt.Fprintf(script, "add rule inet tinfoil container_forward oifname %q ct state established,related accept\n", bridge)
+	if bridge == containernet.ShimNetName {
+		// The designated upstream is the only container on shim-net. Permit it
+		// to open the reverse TLS leg used by opaque client tunnels, while the
+		// following rule keeps every other host service unreachable.
+		fmt.Fprintf(
+			script,
+			"add rule inet tinfoil container_input iifname %q ip saddr %s tcp dport %d accept\n",
+			bridge,
+			containernet.ShimUpstreamIP,
+			boot.ShimListenPort,
+		)
+	}
 	fmt.Fprintf(script, "add rule inet tinfoil container_input iifname %q ct state new drop\n", bridge)
 	switch network.Egress {
 	case "open":
