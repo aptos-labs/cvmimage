@@ -54,7 +54,7 @@ func TestOpenEgressRejectsProtocolAssignments(t *testing.T) {
 	}
 }
 
-func TestContainerNetworkPolicyKeepsShimClosed(t *testing.T) {
+func TestContainerNetworkPolicyOnlyOpensShimTLSFromUpstream(t *testing.T) {
 	config := &runtimeconfig.Config{
 		ShimCfg:  &shimconfig.Config{UpstreamContainer: "api"},
 		Networks: map[string]*runtimeconfig.NetworkSpec{},
@@ -62,6 +62,14 @@ func TestContainerNetworkPolicyKeepsShimClosed(t *testing.T) {
 	script := renderContainerNetworkScript(config, false)
 	if !strings.Contains(script, `iifname "shim-net" oifname "shim-net" accept`) || strings.Contains(script, `iifname "shim-net" ip daddr !`) {
 		t.Fatalf("unexpected shim policy:\n%s", script)
+	}
+	allow := strings.Index(script, `iifname "shim-net" ip saddr 172.31.255.2 tcp dport 443 accept`)
+	drop := strings.Index(script, `iifname "shim-net" ct state new drop`)
+	if allow < 0 || drop < 0 || allow > drop {
+		t.Fatalf("shim reverse-TLS allow must narrowly precede host-input drop:\n%s", script)
+	}
+	if strings.Contains(script, `iifname "shim-net" tcp dport 443 accept`) {
+		t.Fatalf("shim TLS must stay restricted to the fixed upstream address:\n%s", script)
 	}
 }
 
