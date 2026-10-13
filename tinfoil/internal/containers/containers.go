@@ -585,7 +585,10 @@ func pullImage(ctx context.Context, cli *client.Client, imageName string) error 
 	if parts := strings.Split(imageName, "/"); len(parts) > 1 && strings.Contains(parts[0], ".") {
 		host = parts[0]
 	}
-	if cfg, err := dockerconfig.Load(dockerconfig.Dir()); err == nil {
+	// Boot writes registry credentials into the private ramdisk. Use that
+	// path directly: dockerconfig.Dir() may have cached its default before
+	// setupRegistryAuth set DOCKER_CONFIG.
+	if cfg, err := dockerconfig.Load(boot.DockerConfigDir); err == nil {
 		if auth, err := cfg.GetAuthConfig(host); err == nil && auth.Username != "" {
 			encoded, _ := json.Marshal(auth)
 			opts.RegistryAuth = base64.URLEncoding.EncodeToString(encoded)
