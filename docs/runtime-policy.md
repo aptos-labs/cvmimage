@@ -18,7 +18,9 @@ The measured daemon policy includes these mode `0644` files:
 - `/etc/docker/daemon.json` disables inter-container communication and the
   userland proxy, uses Docker's nftables backend, enables no-new-privileges and
   the containerd snapshotter, and registers only the pinned NVIDIA runtime by
-  absolute path.
+  absolute path. Debug images overlay this file from `image/debug-rootfs` and
+  also register `runsc` at `/usr/bin/runsc` with `--platform=systrap`, with
+  `gvisor-bin/` next to that binary. Shipping images do not include gVisor.
 - `/etc/nftables.conf` installs the fail-closed input and forward baseline and
   declares the fixed `http01`, `inbound`, `container_input`, and
   `container_forward` chains. The measured baseline only jumps to them;

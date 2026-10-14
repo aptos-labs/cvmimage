@@ -4,12 +4,20 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"log"
+	"os"
+	"strings"
 
 	tdxabi "github.com/google/go-tdx-guest/abi"
 	tdxclient "github.com/google/go-tdx-guest/client"
 	tdxlabi "github.com/google/go-tdx-guest/client/linuxabi"
 
 	"tinfoil/internal/attestation"
+)
+
+const (
+	cmdlineConfigHashParam = "tinfoil-config-hash"
+	unsetConfigHash        = "0000000000000000000000000000000000000000000000000000000000000000"
 )
 
 // HOST_DATA: 32 bytes the host commits to at launch, at offset 0xC0 of an
@@ -60,7 +68,8 @@ func hostDataConfigHash() (string, error) {
 	if len(report) < hostDataOffset+hostDataSize {
 		return "", fmt.Errorf("attestation report is %d bytes, short of HOST_DATA", len(report))
 	}
-	return hex.EncodeToString(report[hostDataOffset : hostDataOffset+hostDataSize]), nil
+	hash := hex.EncodeToString(report[hostDataOffset : hostDataOffset+hostDataSize])
+	return launchConfigHash(hash, cmdlineConfigHash)
 }
 
 // mrConfigIDConfigHash takes the hash from MRCONFIGID in a TD report. The
@@ -82,7 +91,59 @@ func mrConfigIDConfigHash() (string, error) {
 	if result != uintptr(tdxlabi.TdxAttestSuccess) {
 		return "", fmt.Errorf("reading TD report: status %d", result)
 	}
-	return configHashFromTDReport(request.TdReport[:])
+	hash, err := configHashFromTDReport(request.TdReport[:])
+	if err != nil {
+		return "", err
+	}
+	return launchConfigHash(hash, cmdlineConfigHash)
+}
+
+// launchConfigHash prefers the hash the host bound into MRCONFIGID / HOST_DATA.
+// Fleet QEMU currently leaves that field zero and instead names the config on
+// the kernel command line as tinfoil-config-hash=…, which is the contract the
+// 0.11.0 debug guests already boot against.
+func launchConfigHash(measured string, cmdline func() (string, error)) (string, error) {
+	if measured != unsetConfigHash {
+		return measured, nil
+	}
+	hash, err := cmdline()
+	if err != nil {
+		return "", fmt.Errorf("launch config hash is unset and %w", err)
+	}
+	log.Printf("launch config hash from kernel command line (MRCONFIGID unset)")
+	return hash, nil
+}
+
+func cmdlineConfigHash() (string, error) {
+	data, err := os.ReadFile("/proc/cmdline")
+	if err != nil {
+		return "", fmt.Errorf("reading %s from cmdline: %w", cmdlineConfigHashParam, err)
+	}
+	return cmdlineConfigHashFrom(string(data))
+}
+
+func cmdlineConfigHashFrom(cmdline string) (string, error) {
+	prefix := cmdlineConfigHashParam + "="
+	var value string
+	found := false
+	for _, field := range strings.Fields(cmdline) {
+		candidate, ok := strings.CutPrefix(field, prefix)
+		if !ok {
+			continue
+		}
+		if found {
+			return "", fmt.Errorf("duplicate kernel command-line parameter %s", cmdlineConfigHashParam)
+		}
+		value = candidate
+		found = true
+	}
+	if !found {
+		return "", fmt.Errorf("parameter %s not found in cmdline", cmdlineConfigHashParam)
+	}
+	if !hexHashPattern.MatchString(value) {
+		return "", fmt.Errorf("invalid config hash format in cmdline: %s", value)
+	}
+	return value, nil
 }
 
 // configHashFromTDReport cuts MRCONFIGID out of a TD report. MRTD and MROWNER

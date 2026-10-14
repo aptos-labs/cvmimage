@@ -1,0 +1,24 @@
+{
+    "data-root": "/mnt/ramdisk/private/docker",
+    "no-new-privileges": true,
+    "icc": false,
+    "userland-proxy": false,
+    "firewall-backend": "nftables",
+    "ipv6": false,
+    "ip6tables": false,
+    "features": {
+        "containerd-snapshotter": true
+    },
+    "runtimes": {
+        "nvidia": {
+            "args": [],
+            "path": "/usr/bin/nvidia-container-runtime"
+        },
+        "runsc": {
+            "path": "/usr/bin/runsc",
+            "runtimeArgs": [
+                "--platform=systrap"
+            ]
+        }
+    }
+}

@@ -34,6 +34,15 @@ func TestEnsureSymlinkCreatesAndReplacesStaleLink(t *testing.T) {
 	}
 }
 
+func TestDockerDataRootTmpfsIsExecutable(t *testing.T) {
+	// dockerd copies runsc into data-root; MS_NOEXEC is why the first
+	// debug image failed with permission denied on the runtime binary.
+	flags := uintptr(syscall.MS_NOSUID | syscall.MS_NODEV)
+	if flags&syscall.MS_NOEXEC != 0 {
+		t.Fatal("docker data-root tmpfs must be executable")
+	}
+}
+
 func TestRamdiskSizeGB(t *testing.T) {
 	tests := []struct {
 		name     string
