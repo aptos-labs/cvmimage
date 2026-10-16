@@ -18,10 +18,13 @@ The measured daemon policy includes these mode `0644` files:
 - `/etc/docker/daemon.json` disables inter-container communication and the
   userland proxy, uses Docker's nftables backend, enables no-new-privileges and
   the containerd snapshotter, and registers the pinned NVIDIA runtime and
-  `runsc` by absolute path. `runsc` has no `runtimeArgs`, so dockerd execs
-  `/usr/bin/runsc` from the rootfs instead of writing a wrapper under the
-  noexec ramdisk data-root. Pinned gVisor 20260928.0 defaults
-  `--platform=systrap`; re-check that default when bumping the pin.
+  `runsc` by absolute path. Shipping `runsc` has no `runtimeArgs`, so dockerd
+  execs `/usr/bin/runsc` from the rootfs. Debug images overlay this file from
+  `image/debug-rootfs`, enable Docker `experimental` for checkpoint/restore,
+  and register `runsc` with `--platform=systrap` and `--overlay2=none`.
+  PID 1 mounts an executable tmpfs at the Docker data-root and seeds
+  `/etc/docker/daemon.json` there for `dockerd --config-file`. Pinned gVisor
+  20260928.0 defaults `--platform=systrap`; re-check when bumping the pin.
   `gvisor-bin/` sits next to that binary.
 - `/etc/nftables.conf` installs the fail-closed input and forward baseline and
   declares the fixed `http01`, `inbound`, `container_input`, and

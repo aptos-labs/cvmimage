@@ -142,6 +142,18 @@ func SetupRamdisk(log LogFunc) error {
 	if err := ensureDir(boot.PrivateDir, 0700); err != nil {
 		return err
 	}
+	// dockerd copies custom runtimes into data-root and must be able to
+	// create that tree. Keep the parent ramdisk noexec; give Docker its
+	// own executable tmpfs so runsc can start.
+	if err := ensureDir(boot.DockerDataRoot, 0700); err != nil {
+		return err
+	}
+	if err := mountIfNeeded("tmpfs", boot.DockerDataRoot, "tmpfs", syscall.MS_NOSUID|syscall.MS_NODEV, fmt.Sprintf("size=%dG,mode=0700", sizeGB), log); err != nil {
+		return err
+	}
+	if err := seedDockerDaemonConfig(log); err != nil {
+		return err
+	}
 	if err := ensureDir(boot.PublicDir, 0755); err != nil {
 		return err
 	}
@@ -210,6 +222,19 @@ func mountIfNeeded(source, target, fstype string, flags uintptr, data string, lo
 		return fmt.Errorf("mount %s on %s: %w", fstype, target, err)
 	}
 	logf(log, "mounted %s on %s", fstype, target)
+	return nil
+}
+
+func seedDockerDaemonConfig(log LogFunc) error {
+	const measured = "/etc/docker/daemon.json"
+	data, err := os.ReadFile(measured)
+	if err != nil {
+		return fmt.Errorf("read measured docker daemon config: %w", err)
+	}
+	if err := os.WriteFile(boot.DockerDaemonConfigPath, data, 0644); err != nil {
+		return fmt.Errorf("write ramdisk docker daemon config: %w", err)
+	}
+	logf(log, "seeded docker daemon config at %s", boot.DockerDaemonConfigPath)
 	return nil
 }
 

@@ -230,7 +230,9 @@ func runLifecycle(parent context.Context, deps lifecycleDeps, readiness *readine
 	if err := deps.services.Start(bootCtx, supervisor.Service{
 		Name: dockerName, Required: true, Restart: true,
 		Command: command(dockerName, "/usr/bin/dockerd",
-			"-H", "unix://"+dockerSocket, "--containerd="+containerdSocket),
+			"-H", "unix://"+dockerSocket,
+			"--containerd="+containerdSocket,
+			"--config-file="+boot.DockerDaemonConfigPath),
 		Ready: endpointReady("unix", dockerSocket, dockerReadyLimit),
 	}); err != nil {
 		return err
