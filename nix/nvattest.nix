@@ -27,14 +27,14 @@ let
     "https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz"
     "sha256-tOInM4YYi/cbHCWP2R0jlFzlaTN0ZVgHFMWagz9Wnvk=";
   opensslSource = source "openssl"
-    "https://github.com/openssl/openssl/releases/download/openssl-3.6.1/openssl-3.6.1.tar.gz"
-    "sha256-pj8ekUqkZPEnevY3i+42uF//cWyr1tgWSaSn0V+DjjU=";
+    "https://github.com/openssl/openssl/releases/download/openssl-3.6.5/openssl-3.6.5.tar.gz"
+    "sha256-pP6uC93OtMhqLh/AjGNNUYa9m7AHDrE+JX1Cu3VFE5w=";
   xmlsecSource = source "xmlsec"
-    "https://github.com/lsh123/xmlsec/releases/download/xmlsec-1_2_39/xmlsec1-1.2.39.tar.gz"
-    "sha256-v4gbjei20nkgCLOUyOvEkx9vT3TcfaVfHQ7wbVQx56A=";
+    "https://github.com/lsh123/xmlsec/releases/download/xmlsec-1_2_43/xmlsec1-1.2.43.tar.gz"
+    "sha256-pwnU0pF5OMbIWKNqV41rzuvHAl079fJgkOg0qbdg4P8=";
   curlSource = source "curl"
-    "https://github.com/curl/curl/releases/download/curl-7_88_1/curl-7.88.1.tar.gz"
-    "sha256-A+ig2Cjyu4QE5gh9X5yvvHPjYMRT9jo45QmPAOBpgpA=";
+    "https://github.com/curl/curl/releases/download/curl-8_23_0/curl-8.23.0.tar.gz"
+    "sha256-Id6GppxK0OyBk4s8Uv1Ok88ysyNhPRj9MpMKUAQZFaM=";
   regorusSource = source "regorus"
     "https://github.com/microsoft/regorus/archive/${regorusRevision}.tar.gz"
     "sha256-bb4rCGFItwXQB+JlIObzkVOfEi8y+PFR3xMufTwB94U=";
@@ -86,7 +86,8 @@ let
         --replace-fail '@OPENSSL_PATCH@' '${./patches/openssl-reproducible-buildinfo.patch}' \
         --replace-fail '@PERL@' '${pkgs.perl}/bin/perl' \
         --replace-fail '@XMLSEC_SOURCE@' '${xmlsecSource}' \
-        --replace-fail '@CURL_SOURCE@' '${curlSource}'
+        --replace-fail '@CURL_SOURCE@' '${curlSource}' \
+        --replace-fail '--disable-shared' '--disable-shared --disable-docs'
     '';
     nativeBuildInputs = [
       pkgs.cmake

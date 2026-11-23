@@ -3,7 +3,7 @@
 let
   inherit (pkgs) lib;
   inherit (kernel) kernelPackages release;
-  version = "595.71.05";
+  version = "595.112.07";
   moduleNames = [
     "nvidia.ko"
     "nvidia-uvm.ko"

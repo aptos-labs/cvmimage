@@ -7,7 +7,7 @@ let
   inherit (pkgs) lib;
 
   version = "7.0.0";
-  release = "7.0.0-28-generic";
+  release = "7.0.0-44-generic";
   buildTimestamp = "Tue Jan  1 00:00:00 UTC 1980";
   policyConfigs = [
     ../kernel/config.d/10-tinfoil-cvm-policy.config
@@ -21,12 +21,12 @@ let
   policyConfigArgs = lib.concatMapStringsSep " " (path: "${path}") policyConfigs;
 
   sourceDeb = pkgs.fetchurl {
-    url = "https://snapshot.ubuntu.com/ubuntu/20260721T000000Z/pool/main/l/linux/linux-source-7.0.0_7.0.0-28.28_all.deb";
-    hash = "sha256-3VmUsZmhywax8za7CGxcI6klj9z9y7fcyNOvqaXZLhM=";
+    url = "https://snapshot.ubuntu.com/ubuntu/20261123T000000Z/pool/main/l/linux/linux-source-7.0.0_7.0.0-44.44_all.deb";
+    hash = "sha256-Hr6cdwVnuLRegdSQxK+Kosyw4hQzyAuUxDQjo1hEegM=";
   };
 
   source =
-    pkgs.runCommand "linux-source-7.0.0-28.28"
+    pkgs.runCommand "linux-source-7.0.0-44.44"
       {
         nativeBuildInputs = [
           pkgs.dpkg

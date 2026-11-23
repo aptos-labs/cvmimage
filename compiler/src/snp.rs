@@ -258,7 +258,7 @@ fn id_block(pem: &str, ld: &[u8; 48], guest_svn: u32) -> Result<IdBlock, String>
     block[ID_BLOCK_SVN..ID_BLOCK_SVN + 4].copy_from_slice(&guest_svn.to_le_bytes());
     block[ID_BLOCK_POLICY..ID_BLOCK_POLICY + 8].copy_from_slice(&SNP_GUEST_POLICY.to_le_bytes());
     let signature: Signature = key.sign(&block);
-    let point = key.verifying_key().to_encoded_point(false);
+    let point = key.verifying_key().to_sec1_point(false);
     let public = IGVM_VHS_SNP_ID_BLOCK_PUBLIC_KEY {
         curve: ID_CURVE_P384,
         reserved: 0,
@@ -627,12 +627,12 @@ mod tests {
         signed[ID_BLOCK_SVN..ID_BLOCK_SVN + 4].copy_from_slice(&7u32.to_le_bytes());
         signed[ID_BLOCK_POLICY..ID_BLOCK_POLICY + 8]
             .copy_from_slice(&SNP_GUEST_POLICY.to_le_bytes());
-        let point = p384::EncodedPoint::from_affine_coordinates(
+        let point = p384::Sec1Point::from_affine_coordinates(
             &be48(&id_public_key.qx).into(),
             &be48(&id_public_key.qy).into(),
             false,
         );
-        let verifying = VerifyingKey::from_encoded_point(&point).unwrap();
+        let verifying = VerifyingKey::from_sec1_point(&point).unwrap();
         let signature = Signature::from_scalars(
             be48(&id_key_signature.r_comp),
             be48(&id_key_signature.s_comp),

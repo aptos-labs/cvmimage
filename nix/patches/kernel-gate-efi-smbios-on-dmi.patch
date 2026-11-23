@@ -42,7 +42,12 @@
 +#endif
 --- a/arch/x86/coco/sev/core.c
 +++ b/arch/x86/coco/sev/core.c
-@@ -1274,0 +1275 @@
+@@ -1268,6 +1268,8 @@
+  */
+ void __init snp_dmi_setup(void)
+ {
 +#ifdef CONFIG_DMI
-@@ -1276,0 +1278 @@
+ 	if (efi_enabled(EFI_CONFIG_TABLES))
+ 		dmi_setup();
 +#endif
+ }
